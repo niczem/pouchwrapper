@@ -1,6 +1,6 @@
 {
   "name": "pouchwrapper",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "dbwrapper for couchdb",
   "main": "index.js",
   "scripts": {
