@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/niczem/dbwrapper.git"
+    "url": "git+https://github.com/niczem/pouchwrapper.git"
   },
   "keywords": [
     "db",
