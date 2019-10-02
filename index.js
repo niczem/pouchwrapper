@@ -11,10 +11,15 @@ var dbWrapper = function(){
 
     this.setConfig = function(config){
       this.config = config;
-    }
-    this.initDB = function(db_name){
+    };
+    this.initDB = function(db_name, noprefix=false){
       var self = this;
       if(typeof this.databases[db_name] == 'undefined'){
+
+            let prefix = this.config.db_prefix;
+            if(noprefix){
+              prefix = false;
+            }
             this.databases[db_name] = {
               local: new PouchDB(db_name, {skip_setup:false}),
               remote: new PouchDB(this.getDBURL()+this.config.db_prefix+db_name+'?include_docs=true&descending=true', {skip_setup:false}),   
@@ -72,10 +77,9 @@ var dbWrapper = function(){
         }
         this.databases[db_name].onChange[method_name] = method;
     }
-    this.getDB = function(db_name){
-        
+    this.getDB = function(db_name, noprefix=false){
         if(typeof this.databases[db_name] == 'undefined'){
-            this.initDB(db_name)
+            this.initDB(db_name, noprefix)
         }
         return this.databases[db_name].local;
     };
