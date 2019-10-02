@@ -18,11 +18,11 @@ var dbWrapper = function(){
 
             let prefix = this.config.db_prefix;
             if(noprefix){
-              prefix = false;
+              prefix = '';
             }
             this.databases[db_name] = {
               local: new PouchDB(db_name, {skip_setup:false}),
-              remote: new PouchDB(this.getDBURL()+this.config.db_prefix+db_name+'?include_docs=true&descending=true', {skip_setup:false}),   
+              remote: new PouchDB(this.getDBURL()+prefix+'?include_docs=true&descending=true', {skip_setup:false}),   
             }
 
             this.databases[db_name].local.replicate.from(this.databases[db_name].remote).on('complete', function (r,a,n) {
