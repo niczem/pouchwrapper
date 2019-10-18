@@ -26,40 +26,47 @@ var dbWrapper = function(){
             }
 
             this.databases[db_name].local.replicate.from(this.databases[db_name].remote).on('complete', function (r,a,n) {
-            // yay, we're done!
-            console.log('initial replication done!');
-            console.log('starting sync..');
+              // yay, we're done!
+              console.log('initial replication done!');
 
-            self.databases[db_name].remote.sync(db_name, {
-              live: true,
-              retry: true
-            }).on('change', function (change) {
-              console.log('data ch change', change);
-              //each database can contain multiple onchange listeners, defined by index n
-              for(let n in self.databases[db_name].onChange){
-                if(typeof(self.databases[db_name].onChange[n]) == 'function'){
-                  self.databases[db_name].onChange[n]();
+              //check if any function needs to be fired after initial replication
+              for(let n in self.databases[db_name].onInitialReplicationDone){
+                  if(typeof(self.databases[db_name].onInitialReplicationDone[n]) == 'function'){
+                    self.databases[db_name].onInitialReplicationDone[n]();
+                  }
+              }
+              console.log('starting sync..');
+              self.databases[db_name].remote.sync(db_name, {
+                live: true,
+                retry: true
+              }).on('change', function (change) {
+                console.log('data ch change', change);
+                //each database can contain multiple onchange listeners, defined by index n
+                for(let n in self.databases[db_name].onChange){
+                  if(typeof(self.databases[db_name].onChange[n]) == 'function'){
+                    self.databases[db_name].onChange[n](change);
+                  }
                 }
-              }
+              }).on('error', function (err) {
+                //TODO exception/logging
+                console.log('sync error', err);
+                if(err.error === 'unauthorized'){
+                  localStorage.removeItem(username);
+                  localStorage.removeItem(password);
+                  window.location.reload();
+                }
+              });
+
             }).on('error', function (err) {
-              console.log('sync error', err);
+              //TODO exception/logging
+              console.log('error during inital replication:');
+              console.log(err);
               if(err.error === 'unauthorized'){
-                localStorage.removeItem(username);
-                localStorage.removeItem(password);
-                window.location.reload();
+                  localStorage.clear();
+                  window.location.reload();
               }
+              // boo, something went wrong!
             });
-
-          }).on('error', function (err) {
-
-            console.log('error during inital replication:');
-            console.log(err);
-            if(err.error === 'unauthorized'){
-                localStorage.clear();
-                window.location.reload();
-            }
-            // boo, something went wrong!
-          });
 
       }
     }
@@ -77,6 +84,20 @@ var dbWrapper = function(){
         }
         this.databases[db_name].onChange[method_name] = method;
     }
+    /**
+    * Sets function which is fired when the initial replication for a specified database is done
+    *
+    * @param {string} db_name - Database selector
+    * @param {string} method_name - Index of the method
+    * @param {functoin} method - Function that is executed on db-initial-replication done
+    */
+    this.setOnInitialReplicationDone = function(db_name,method_name,method){
+        var db = this.getDB(db_name);
+        if(typeof this.databases[db_name].onInitialReplicationDone == 'undefined'){
+          this.databases[db_name].onInitialReplicationDone = {}
+        }
+        this.databases[db_name].onInitialReplicationDone[method_name] = method;
+    }
     this.getDB = function(db_name, noprefix=false){
         if(typeof this.databases[db_name] == 'undefined'){
             this.initDB(db_name, noprefix)
@@ -85,7 +106,6 @@ var dbWrapper = function(){
     };
     this.showLogin = function(){
         this.loginCallback();
-        //this.login('sw3','password',this.getDB('items'))
     };
 
     //sets callback function which will be called on showLogin()
